@@ -1,0 +1,68 @@
+name: AI Test Generator
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies
+        run: |
+          ./mvnw clean compile -DskipTests
+
+      - name: Generate AI Tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          echo "Generating AI-based tests..."
+          python3 <<'PYCODE'
+  import os, openai, subprocess, glob
+  
+  openai.api_key = os.getenv("OPENAI_API_KEY")
+  
+  controllers = glob.glob("**/*Controller.java", recursive=True)
+for ctrl in controllers:
+  with open(ctrl, 'r') as f:
+    code = f.read()
+
+  prompt = f"""
+  You are a Java Spring Boot testing assistant.
+  Write a JUnit 5 integration test class for the following controller.
+  Use MockMvc, annotate with @SpringBootTest and @AutoConfigureMockMvc.
+  Only generate valid compilable Java test code.
+  Controller source:
+  {code}
+  """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+  messages=[{"role": "user", "content": prompt}]
+  )
+  
+  test_code = response.choices[0].message.content.strip()
+  
+  test_path = ctrl.replace(".java", "Test.java").replace("src/main/java", "src/test/java")
+  os.makedirs(os.path.dirname(test_path), exist_ok=True)
+  with open(test_path, "w") as f:
+    f.write(test_code)
+  print(f"✅ Generated test for {ctrl}: {test_path}")
+
+subprocess.run(["git", "config", "user.name", "AI Test Bot"])
+  subprocess.run(["git", "config", "user.email", "bot@aitestgen.local"])
+  subprocess.run(["git", "add", "src/test/java"])
+  subprocess.run(["git", "commit", "-m", "🤖 Add AI-generated tests"])
+  subprocess.run(["git", "push"])
+  PYCODE
