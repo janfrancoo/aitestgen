@@ -22,6 +22,12 @@ jobs:
       - name: Install dependencies
         run: ./mvnw clean compile -DskipTests
 
+      - name: Set up Python and install OpenAI SDK
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y python3-pip
+          pip install openai
+
       - name: Generate AI Tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
