@@ -28,44 +28,43 @@ jobs:
         run: |
           echo "Generating AI-based tests..."
           python3 <<'PYCODE'
-  import os, subprocess, glob
-  from openai import OpenAI
-  
-  client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-  
-  controllers = glob.glob("**/*Controller.java", recursive=True)
+          import os, subprocess, glob
+          from openai import OpenAI
+          
+          client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+          
+          controllers = glob.glob("**/*Controller.java", recursive=True)
+        
+          for ctrl in controllers:
+            with open(ctrl, 'r') as f:
+              code = f.read()
+          
+            prompt = f"""
+            You are a Java Spring Boot testing assistant.
+            Write a JUnit 5 integration test class for the following controller.
+            Use MockMvc, annotate with @SpringBootTest and @AutoConfigureMockMvc.
+            Only generate valid compilable Java test code.
+            Controller source:
+            {code}
+            """
+          
+              response = client.chat.completions.create(
+                  model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+            )
+            
+            test_code = response.choices[0].message.content.strip()
+            test_path = ctrl.replace(".java", "Test.java").replace("src/main/java", "src/test/java")
+            
+            os.makedirs(os.path.dirname(test_path), exist_ok=True)
+            with open(test_path, "w") as f:
+              f.write(test_code)
+          
+            print(f"✅ Generated test for {ctrl}: {test_path}")
 
-for ctrl in controllers:
-  with open(ctrl, 'r') as f:
-    code = f.read()
-
-  prompt = f"""
-  You are a Java Spring Boot testing assistant.
-  Write a JUnit 5 integration test class for the following controller.
-  Use MockMvc, annotate with @SpringBootTest and @AutoConfigureMockMvc.
-  Only generate valid compilable Java test code.
-  Controller source:
-  {code}
-  """
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-  messages=[{"role": "user", "content": prompt}]
-  )
-  
-  test_code = response.choices[0].message.content.strip()
-  test_path = ctrl.replace(".java", "Test.java").replace("src/main/java", "src/test/java")
-  
-  os.makedirs(os.path.dirname(test_path), exist_ok=True)
-  with open(test_path, "w") as f:
-    f.write(test_code)
-
-  print(f"✅ Generated test for {ctrl}: {test_path}")
-
-# Git commit ve push
-subprocess.run(["git", "config", "user.name", "AI Test Bot"])
-  subprocess.run(["git", "config", "user.email", "bot@aitestgen.local"])
-  subprocess.run(["git", "add", "src/test/java"])
-  subprocess.run(["git", "commit", "-m", "🤖 Add AI-generated tests"])
-  subprocess.run(["git", "push"])
-  PYCODE
+          subprocess.run(["git", "config", "user.name", "AI Test Bot"])
+          subprocess.run(["git", "config", "user.email", "bot@aitestgen.local"])
+          subprocess.run(["git", "add", "src/test/java"])
+          subprocess.run(["git", "commit", "-m", "🤖 Add AI-generated tests"])
+          subprocess.run(["git", "push"])
+          PYCODE
