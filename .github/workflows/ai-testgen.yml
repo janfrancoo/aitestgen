@@ -34,7 +34,7 @@ jobs:
         run: |
           echo "Generating AI-based tests..."
           python3 <<'PYCODE'
-          import os, subprocess, glob
+          import os, subprocess, glob, re
           from openai import OpenAI
   
           client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -52,7 +52,15 @@ jobs:
             Only generate valid compilable Java test code.
             Controller source:
             {code}
+            Context that controller uses:
             """
+          
+            classes = re.findall(r'import\s+com\.janfranco\.[\w.]+\.([A-Z]\w+);', text)
+            for cls in classes:
+              found_classes = glob.glob(f"**/*{cls}.java", recursive=True)
+              with open(found_classes[0], 'r') as f:
+                class_content = f.read()
+              prompt += class_content
 
             # response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}])
 
