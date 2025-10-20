@@ -81,9 +81,10 @@ jobs:
             """
           
             classes = re.findall(r'import\s+com\.janfranco\.[\w.]+\.([A-Z]\w+);', code)
+            extended_classes = classes + [cls + 'Impl' for cls in classes if cls.endswith('Service')]
             collected = {}
           
-            for cls in classes:
+            for cls in extended_classes:
               collect_dependencies(cls, collected)
           
             for cls_name, cls_content in collected.items():
