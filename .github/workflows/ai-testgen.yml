@@ -76,7 +76,8 @@ jobs:
             You are a Java Spring Boot testing assistant.
             Write a JUnit 5 integration test class for the following controller.
             Use MockMvc, annotate with @SpringBootTest and @AutoConfigureMockMvc.
-            Only generate valid compilable Java test code.
+            Only generate valid compilable Java test code. Do not write any explanation and also do not write any comment in code.
+            Your answer should start with Java code and end with it.
             Controller source:
             {code}
             Context that controller uses:
