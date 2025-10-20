@@ -36,6 +36,31 @@ jobs:
           python3 <<'PYCODE'
           import os, subprocess, glob, re
           from openai import OpenAI
+          
+          
+          def collect_dependencies(class_name, collected=None):
+            if collected is None:
+              collected = {}
+        
+            if class_name in collected:
+              return collected
+        
+            found = glob.glob(f"**/*{class_name}.java", recursive=True)
+            if not found:
+              return collected
+        
+            file_path = found[0]
+            with open(file_path, "r") as f:
+              code = f.read()
+        
+            collected[class_name] = code
+        
+            imports = re.findall(r'import\s+com\.janfranco\.[\w.]+\.([A-Z]\w+);', code)
+            for imp in imports:
+              collect_dependencies(imp, collected)
+        
+            return collected
+  
   
           client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
   
@@ -56,11 +81,14 @@ jobs:
             """
           
             classes = re.findall(r'import\s+com\.janfranco\.[\w.]+\.([A-Z]\w+);', code)
+            collected = {}
+          
             for cls in classes:
-              found_classes = glob.glob(f"**/*{cls}.java", recursive=True)
-              with open(found_classes[0], 'r') as f:
-                class_content = f.read()
-              prompt += class_content
+              collect_dependencies(cls, collected)
+          
+            for cls_name, cls_content in collected.items():
+              prompt += f"\n\n// ===== {cls_name}.java =====\n"
+              prompt += cls_content
 
             # response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}])
 
