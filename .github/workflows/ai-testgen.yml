@@ -97,14 +97,18 @@ jobs:
             response = client.chat.completions.create(model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}])
 
             print(f"✅ Prompt for {ctrl}: {prompt}")
-            test_code = response.choices[0].message.content.strip()
-            print(f"✅ Generated test for {ctrl}: {test_code}")
+            test_code = response.choices[0].message.content
+            clean_test_code = re.sub(r"^```[\w]*\n?", "", test_code)
+            clean_test_code = re.sub(r"```$", "", clean_test_code)
+            clean_test_code = clean_test_code.strip()
+          
+            print(f"✅ Generated test for {ctrl}: {clean_test_code}")
       
-            test_path = ctrl.replace(".java", f"{controller_name}Test.java").replace("src/main/java", "src/test/java")
+            test_path = ctrl.replace(f"{controller_name}.java", f"{controller_name}Test.java").replace("src/main/java", "src/test/java")
     
             os.makedirs(os.path.dirname(test_path), exist_ok=True)
             with open(test_path, "w") as f:
-              f.write(test_code)
+              f.write(clean_test_code)
 
           subprocess.run(["git", "config", "user.name", "AI Test Bot"])
           subprocess.run(["git", "config", "user.email", "bot@aitestgen.local"])
