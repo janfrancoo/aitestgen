@@ -55,7 +55,7 @@ jobs:
             Context that controller uses:
             """
           
-            classes = re.findall(r'import\s+com\.janfranco\.[\w.]+\.([A-Z]\w+);', text)
+            classes = re.findall(r'import\s+com\.janfranco\.[\w.]+\.([A-Z]\w+);', code)
             for cls in classes:
               found_classes = glob.glob(f"**/*{cls}.java", recursive=True)
               with open(found_classes[0], 'r') as f:
